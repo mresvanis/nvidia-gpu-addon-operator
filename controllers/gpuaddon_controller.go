@@ -49,6 +49,7 @@ type GPUAddonReconciler struct {
 var resourceOrderedReconcilers = []ResourceReconciler{
 	&NFDResourceReconciler{},
 	&SubscriptionResourceReconciler{},
+	&NetworkOperatorResourceReconciler{},
 	&ClusterPolicyResourceReconciler{},
 	&ConsolePluginResourceReconciler{},
 }
@@ -65,6 +66,8 @@ var resourceOrderedReconcilers = []ResourceReconciler{
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=consoles,verbs=get;list;watch;patch
 //+kubebuilder:rbac:groups=apps,namespace=system,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",namespace=system,resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=mellanox.com,resources=nicclusterpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

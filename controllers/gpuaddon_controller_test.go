@@ -134,10 +134,10 @@ var _ = Describe("GPUAddon Reconcile", Ordered, func() {
 			Expect(k8serrors.IsNotFound(err)).To(BeTrue())
 		})
 
-		It("should delete the Subscription CR", func() {
+		It("should delete the NetworkOperator Subscription CR", func() {
 			s := &operatorsv1alpha1.Subscription{}
 			err := r.Get(context.TODO(), client.ObjectKey{
-				Name:      "gpu-operator-certified",
+				Name:      "nvidia-network-operator",
 				Namespace: gpuAddon.Namespace,
 			}, s)
 			Expect(err).Should(HaveOccurred())
@@ -227,7 +227,24 @@ func prepareClusterForGPUAddonDeletionTest() (*addonv1alpha1.GPUAddon, *GPUAddon
 		},
 	}
 
-	r := newTestGPUAddonReconciler(gpuAddon, gpuaddoncsv, nfd, subscription, csv, clusterPolicy)
+	// Subscription
+	netopSubscription := &operatorsv1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "nvidia-network-operator",
+			Namespace:       gpuAddon.Namespace,
+			OwnerReferences: []metav1.OwnerReference{ownerRef},
+		},
+	}
+
+	// NetworkOperator CSV
+	netopCSV := &operatorsv1alpha1.ClusterServiceVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nvidia-network-operator.v1.1.0",
+			Namespace: gpuAddon.Namespace,
+		},
+	}
+
+	r := newTestGPUAddonReconciler(gpuAddon, gpuaddoncsv, nfd, subscription, csv, netopSubscription, netopCSV, clusterPolicy)
 
 	return gpuAddon, r
 }
