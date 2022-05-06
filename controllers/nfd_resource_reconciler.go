@@ -21,7 +21,7 @@ import (
 const (
 	NFDDeployedCondition = "NodeFeatureDiscoveryDeployed"
 
-	workerConfig = "core:\n  sleepInterval: 60s\nsources:\n  pci:\n    deviceClassWhitelist:\n    - \"0200\"\n    - \"03\"\n    - \"12\"\n    deviceLabelFields:\n    - \"vendor\"\n"
+	workerConfig = "core:\n  sleepInterval: 60s\nsources:\n  pci:\n    deviceClassWhitelist:\n    - \"0200\"\n    - \"03\"\n    - \"02\"\n    - \"0207\"\n    - \"0302\"\n    - \"12\"\n    deviceLabelFields:\n    - \"vendor\"\n"
 )
 
 type NFDResourceReconciler struct{}
