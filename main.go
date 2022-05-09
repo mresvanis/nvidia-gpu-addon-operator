@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	netopv1alpha1 "github.com/Mellanox/network-operator/api/v1alpha1"
 	gpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
@@ -76,6 +77,7 @@ func init() {
 	utilruntime.Must(consolev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(configv1.AddToScheme(scheme))
 	utilruntime.Must(operatorv1.AddToScheme(scheme))
+	utilruntime.Must(netopv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -124,6 +126,13 @@ func main() {
 	go func() {
 		if err := watchForOwnClusterPoliciesWhenAvailable(gpuAddonController); err != nil {
 			setupLog.Error(err, "unable to wait and watch for ClusterPolicy CRD")
+			return
+		}
+	}()
+
+	go func() {
+		if err := watchForOwnNicClusterPoliciesWhenAvailable(gpuAddonController); err != nil {
+			setupLog.Error(err, "unable to wait and watch for NicClusterPolicy CRD")
 			return
 		}
 	}()
@@ -179,6 +188,22 @@ func watchForOwnClusterPoliciesWhenAvailable(c controller.Controller) error {
 	return nil
 }
 
+func watchForOwnNicClusterPoliciesWhenAvailable(c controller.Controller) error {
+	if err := wait.PollInfinite(time.Second, isNicClusterPolicyAvailable()); err != nil {
+		return fmt.Errorf("unable to wait for NicClusterPolicy CRD: %w", err)
+	}
+
+	err := c.Watch(
+		&source.Kind{Type: &netopv1alpha1.NicClusterPolicy{}},
+		&handler.EnqueueRequestForObject{})
+
+	if err != nil {
+		return fmt.Errorf("unable to watch for owned NicClusterPolicy CRs: %w", err)
+	}
+
+	return nil
+}
+
 func isClusterPolicyAvailable() wait.ConditionFunc {
 	return func() (bool, error) {
 		client, err := client.New(ctrlconfig.GetConfigOrDie(), client.Options{Scheme: scheme})
@@ -189,6 +214,25 @@ func isClusterPolicyAvailable() wait.ConditionFunc {
 		clusterPolicyList := &gpuv1.ClusterPolicyList{}
 
 		err = client.List(context.TODO(), clusterPolicyList)
+		unavailable := meta.IsNoMatchError(err)
+		if err != nil && !unavailable {
+			return false, err
+		}
+
+		return !unavailable, nil
+	}
+}
+
+func isNicClusterPolicyAvailable() wait.ConditionFunc {
+	return func() (bool, error) {
+		client, err := client.New(ctrlconfig.GetConfigOrDie(), client.Options{Scheme: scheme})
+		if err != nil {
+			return false, err
+		}
+
+		nicClusterPolicyList := &netopv1alpha1.NicClusterPolicyList{}
+
+		err = client.List(context.TODO(), nicClusterPolicyList)
 		unavailable := meta.IsNoMatchError(err)
 		if err != nil && !unavailable {
 			return false, err

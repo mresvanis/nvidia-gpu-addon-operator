@@ -54,6 +54,15 @@ func (r *NetworkOperatorResourceReconciler) Reconcile(
 
 	conditions := []metav1.Condition{}
 
+	if gpuAddon.Spec.RDMA == nil {
+		conditions = append(conditions, r.getDeployedConditionNotConfigured())
+
+		logger := log.FromContext(ctx, "Reconcile Step", "NetworkOperator Components")
+		logger.Info("NetworkOperator will not be reconciled as GPUAddon RDMA is not configured")
+
+		return conditions, nil
+	}
+
 	if err := r.reconcileSubscription(ctx, client, gpuAddon); err != nil {
 		conditions = append(conditions, r.getDeployedConditionFailed(err))
 		return conditions, err
@@ -96,12 +105,6 @@ func (r *NetworkOperatorResourceReconciler) reconcileSubscription(
 
 	if exists {
 		s = existingSubscription
-
-		// if s.Status.InstalledCSV != "" {
-		// 	NetworkOperatorSubscriptionInstalled.WithLabelValues(s.Status.CurrentCSV, s.Status.InstalledCSV).Set(1)
-		// } else {
-		// 	NetworkOperatorSubscriptionInstalled.WithLabelValues("", "").Set(0)
-		// }
 	}
 
 	res, err := controllerutil.CreateOrPatch(context.TODO(), client, s, func() error {
@@ -174,7 +177,7 @@ func (r *NetworkOperatorResourceReconciler) setDesiredSubscription(
 	s.Spec = &operatorsv1alpha1.SubscriptionSpec{
 		CatalogSource:          "certified-operators",
 		CatalogSourceNamespace: "openshift-marketplace",
-		Channel:                "v1.1.0",
+		Channel:                "1.2.0",
 		Package:                networkOperatorPackageName,
 		InstallPlanApproval:    operatorsv1alpha1.ApprovalAutomatic,
 	}
@@ -280,4 +283,12 @@ func (r *NetworkOperatorResourceReconciler) getDeployedConditionSuccess() metav1
 		metav1.ConditionTrue,
 		"Success",
 		"NetworkOperator deployed successfully")
+}
+
+func (r *NetworkOperatorResourceReconciler) getDeployedConditionNotConfigured() metav1.Condition {
+	return common.NewCondition(
+		NetworkOperatorDeployedCondition,
+		metav1.ConditionTrue,
+		"NotConfigured",
+		"GPUAddon RDMA is not configured, the NetworkOperator won't be deployed")
 }

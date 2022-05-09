@@ -23,21 +23,66 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// GPUAddonSpec defines the desired state of GPUAddon
+// Selectors contains common device selectors fields.
+type Selectors struct {
+	IfNames []string `json:"ifNames,omitempty"`
+}
+
+// DeviceSpec describes the user configuration for
+// the the RDMA shared device plugin.
+type DeviceSpec struct {
+	// ResourceName describes the user selected device name.
+	ResourceName string `json:"resourceName"`
+
+	// Selectors describe the device selectors to be used.
+	Selectors Selectors `json:"selectors"`
+}
+
+// IPAMSpec describes the configuration to be used for this network.
+type IPAMSpec struct {
+	Range string `json:"range"`
+
+	OmitRanges []string `json:"exclude,omitempty"`
+}
+
+type MacvlanNetworkSpec struct {
+	// Master describes the host interface to be used.
+	Master string `json:"master,omitempty"`
+
+	// IPAM configuration to be used for this network.
+	IPAM IPAMSpec `json:"ipam,omitetmpy"`
+}
+
+// RDMASpec describes the configuration options of the
+// NVIDIA Network Operator and the NVIDIA GPU Operator
+// to enable GPUDirect RDMA.
+type RDMASpec struct {
+	Devices []DeviceSpec `json:"devices"`
+
+	MacvlanNetwork MacvlanNetworkSpec `json:"macvlanNetwork"`
+}
+
+// GPUAddonSpec defines the desired state of GPUAddon.
 type GPUAddonSpec struct {
 
 	//+kubebuilder:default:=true
 	// If enabled, addon will deploy the GPU console plugin.
 	ConsolePluginEnabled bool `json:"console_plugin_enabled,omitempty"`
-	// Optional NVAIE pullsecret
+
+	// Optional RDMA configuration. If it's defined the operator will configure the
+	// NVIDIA Network Operator and the NVIDIA GPU Operator resources, in order to
+	// enable GPUDirect RDMA.
+	RDMA *RDMASpec `json:"rdma,omitempty"`
+
+	// Optional NVAIE pullsecret.
 	NVAIEPullSecret string `json:"nvaie_pullsecret,omitempty"`
 }
 
-// GPUAddonStatus defines the observed state of GPUAddon
+// GPUAddonStatus defines the observed state of GPUAddon.
 type GPUAddonStatus struct {
-	// The state of the addon operator
+	// The state of the addon operator.
 	Phase GPUAddonPhase `json:"phase"`
-	// Conditions represent the latest available observations of an object's state
+	// Conditions represent the latest available observations of an object's state.
 	Conditions []metav1.Condition `json:"conditions"`
 }
 
@@ -59,7 +104,7 @@ const (
 //+kubebuilder:printcolumn:name="Console Plugin",type=boolean,JSONPath=`.spec.console_plugin_enabled`
 //+kubebuilder:printcolumn:name="NVAIE State",type=string,JSONPath=`.status.nvaie_state`
 
-// GPUAddon is the Schema for the gpuaddons API
+// GPUAddon is the Schema for the gpuaddons API.
 type GPUAddon struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -70,7 +115,7 @@ type GPUAddon struct {
 
 //+kubebuilder:object:root=true
 
-// GPUAddonList contains a list of GPUAddon
+// GPUAddonList contains a list of GPUAddon.
 type GPUAddonList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

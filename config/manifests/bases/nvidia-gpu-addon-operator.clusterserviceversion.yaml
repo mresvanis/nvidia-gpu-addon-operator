@@ -17,7 +17,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: GPUAddon is the Schema for the gpuaddons API
+    - description: GPUAddon is the Schema for the gpuaddons API.
       displayName: GPUAddon
       kind: GPUAddon
       name: gpuaddons.nvidia.addons.rh-ecosystem-edge.io

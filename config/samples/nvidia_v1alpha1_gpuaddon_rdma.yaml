@@ -1,0 +1,20 @@
+apiVersion: nvidia.addons.rh-ecosystem-edge.io/v1alpha1
+kind: GPUAddon
+metadata:
+  namespace: redhat-nvidia-gpu-addon
+  name: gpuaddon-config-sample
+spec:
+  console_plugin_enabled: true
+  rdma:
+    devices:
+    - resourceName: "rdma_shared_device_a"
+      selectors:
+        ifNames: ["ens2f0np0"]
+    - resourceName: "rdma_shared_device_b"
+      selectors:
+        ifNames: ["ens2f1np1"]
+    macvlanNetwork:
+      master: "ens2f0np0"
+      ipam:
+        range: "192.168.2.225/28"
+        excluded: ["192.168.2.229/30", "192.168.2.236/32"]

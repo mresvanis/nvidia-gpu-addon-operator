@@ -28,7 +28,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GPUAddon is the Schema for the gpuaddons API
+        description: GPUAddon is the Schema for the gpuaddons API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -43,22 +43,74 @@ spec:
           metadata:
             type: object
           spec:
-            description: GPUAddonSpec defines the desired state of GPUAddon
+            description: GPUAddonSpec defines the desired state of GPUAddon.
             properties:
               console_plugin_enabled:
                 default: true
                 description: If enabled, addon will deploy the GPU console plugin.
                 type: boolean
               nvaie_pullsecret:
-                description: Optional NVAIE pullsecret
+                description: Optional NVAIE pullsecret.
                 type: string
+              rdma:
+                description: Optional RDMA configuration. If it's defined the operator
+                  will configure the NVIDIA Network Operator and the NVIDIA GPU Operator
+                  resources, in order to enable GPUDirect RDMA.
+                properties:
+                  devices:
+                    items:
+                      description: DeviceSpec describes the user configuration for
+                        the the RDMA shared device plugin.
+                      properties:
+                        resourceName:
+                          description: ResourceName describes the user selected device
+                            name.
+                          type: string
+                        selectors:
+                          description: Selectors describe the device selectors to
+                            be used.
+                          properties:
+                            ifNames:
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                      required:
+                      - resourceName
+                      - selectors
+                      type: object
+                    type: array
+                  macvlanNetwork:
+                    properties:
+                      ipam:
+                        description: IPAM configuration to be used for this network.
+                        properties:
+                          exclude:
+                            items:
+                              type: string
+                            type: array
+                          range:
+                            type: string
+                        required:
+                        - range
+                        type: object
+                      master:
+                        description: Master describes the host interface to be used.
+                        type: string
+                    required:
+                    - ipam
+                    type: object
+                required:
+                - devices
+                - macvlanNetwork
+                type: object
             type: object
           status:
-            description: GPUAddonStatus defines the observed state of GPUAddon
+            description: GPUAddonStatus defines the observed state of GPUAddon.
             properties:
               conditions:
                 description: Conditions represent the latest available observations
-                  of an object's state
+                  of an object's state.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -127,7 +179,7 @@ spec:
                   type: object
                 type: array
               phase:
-                description: The state of the addon operator
+                description: The state of the addon operator.
                 enum:
                 - Failed
                 - Idle

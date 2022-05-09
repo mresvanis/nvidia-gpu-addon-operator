@@ -51,6 +51,8 @@ var resourceOrderedReconcilers = []ResourceReconciler{
 	&SubscriptionResourceReconciler{},
 	&NetworkOperatorResourceReconciler{},
 	&ClusterPolicyResourceReconciler{},
+	&NicClusterPolicyResourceReconciler{},
+	&MacvlanNetworkResourceReconciler{},
 	&ConsolePluginResourceReconciler{},
 }
 
@@ -67,6 +69,7 @@ var resourceOrderedReconcilers = []ResourceReconciler{
 //+kubebuilder:rbac:groups=apps,namespace=system,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",namespace=system,resources=services,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=mellanox.com,resources=nicclusterpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=mellanox.com,resources=macvlannetworks,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

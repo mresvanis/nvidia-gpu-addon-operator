@@ -40,7 +40,7 @@ var _ = Describe("NetworkOperator Resource Reconcile", Ordered, func() {
 	Context("Reconcile", func() {
 		common.ProcessConfig()
 		rrec := &NetworkOperatorResourceReconciler{}
-		gpuAddon := addonv1alpha1.GPUAddon{
+		gpuAddon := &addonv1alpha1.GPUAddon{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: "test",
@@ -53,37 +53,99 @@ var _ = Describe("NetworkOperator Resource Reconcile", Ordered, func() {
 		var s operatorsv1alpha1.Subscription
 		var ns corev1.Namespace
 
-		It("should create the NetworOperator Subscription", func() {
-			c := fake.
-				NewClientBuilder().
-				WithScheme(scheme).
-				WithRuntimeObjects().
-				Build()
+		Context("when RDMA is configured", func() {
+			gpuAddon := &addonv1alpha1.GPUAddon{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "test",
+				},
+			}
+			gpuAddon.Spec = addonv1alpha1.GPUAddonSpec{
+				RDMA: &addonv1alpha1.RDMASpec{
+					Devices: []addonv1alpha1.DeviceSpec{
+						{
+							ResourceName: "a_device_name",
+							Selectors: addonv1alpha1.Selectors{
+								IfNames: []string{"a_name"},
+							},
+						},
+					},
+					MacvlanNetwork: addonv1alpha1.MacvlanNetworkSpec{
+						Master: "a_name",
+						IPAM: addonv1alpha1.IPAMSpec{
+							Range: "192.168.2.225/28",
+							OmitRanges: []string{
+								"192.168.2.236/30",
+								"192.168.2.226/30",
+							},
+						},
+					},
+				},
+			}
 
-			_, err := rrec.Reconcile(context.TODO(), c, &gpuAddon)
-			Expect(err).ShouldNot(HaveOccurred())
+			It("should create the NetworOperator Subscription", func() {
+				c := fake.
+					NewClientBuilder().
+					WithScheme(scheme).
+					WithRuntimeObjects().
+					Build()
 
-			err = c.Get(context.TODO(), types.NamespacedName{
-				Namespace: gpuAddon.Namespace,
-				Name:      "nvidia-network-operator",
-			}, &s)
-			Expect(err).ShouldNot(HaveOccurred())
+				_, err := rrec.Reconcile(context.TODO(), c, gpuAddon)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				err = c.Get(context.TODO(), types.NamespacedName{
+					Namespace: gpuAddon.Namespace,
+					Name:      "nvidia-network-operator",
+				}, &s)
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+
+			It("should create the NetworOperator Resource Namespace", func() {
+				c := fake.
+					NewClientBuilder().
+					WithScheme(scheme).
+					WithRuntimeObjects().
+					Build()
+
+				_, err := rrec.Reconcile(context.TODO(), c, gpuAddon)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				err = c.Get(context.TODO(), client.ObjectKey{
+					Name: netopconsts.NetworkOperatorResourceNamespace,
+				}, &ns)
+				Expect(err).ShouldNot(HaveOccurred())
+			})
 		})
 
-		It("should create the NetworOperator Resource Namespace", func() {
+		Context("when RDMA is not configured", func() {
+			gpuAddon.Spec.RDMA = nil
+
 			c := fake.
 				NewClientBuilder().
 				WithScheme(scheme).
 				WithRuntimeObjects().
 				Build()
 
-			_, err := rrec.Reconcile(context.TODO(), c, &gpuAddon)
-			Expect(err).ShouldNot(HaveOccurred())
+			It("should not create any NetworkOperator components", func() {
+				conditions, err := rrec.Reconcile(context.TODO(), c, gpuAddon)
+				Expect(err).ShouldNot(HaveOccurred())
 
-			err = c.Get(context.TODO(), client.ObjectKey{
-				Name: netopconsts.NetworkOperatorResourceNamespace,
-			}, &ns)
-			Expect(err).ShouldNot(HaveOccurred())
+				err = c.Get(context.TODO(), types.NamespacedName{
+					Namespace: gpuAddon.Namespace,
+					Name:      "nvidia-network-operator",
+				}, &s)
+				Expect(err).Should(HaveOccurred())
+				Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+
+				err = c.Get(context.TODO(), client.ObjectKey{
+					Name: netopconsts.NetworkOperatorResourceNamespace,
+				}, &ns)
+				Expect(err).Should(HaveOccurred())
+				Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+
+				Expect(conditions).To(HaveLen(1))
+				Expect(conditions[0].Reason).To(Equal("NotConfigured"))
+			})
 		})
 	})
 

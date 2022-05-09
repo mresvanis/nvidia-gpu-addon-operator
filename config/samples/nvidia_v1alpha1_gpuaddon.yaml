@@ -5,4 +5,3 @@ metadata:
   name: gpuaddon-config-sample
 spec:
   console_plugin_enabled: true
-  # TODO(user): Add fields here

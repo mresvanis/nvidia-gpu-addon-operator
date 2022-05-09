@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	netopv1alpha1 "github.com/Mellanox/network-operator/api/v1alpha1"
 	gpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
@@ -260,6 +261,7 @@ func newTestGPUAddonReconciler(objs ...runtime.Object) *GPUAddonReconciler {
 	Expect(nfdv1.AddToScheme(s)).ShouldNot(HaveOccurred())
 	Expect(configv1.AddToScheme(s)).ShouldNot(HaveOccurred())
 	Expect(appsv1.AddToScheme(s)).ShouldNot(HaveOccurred())
+	Expect(netopv1alpha1.AddToScheme(s)).ShouldNot(HaveOccurred())
 
 	clusterVersion := &configv1.ClusterVersion{
 		ObjectMeta: metav1.ObjectMeta{
