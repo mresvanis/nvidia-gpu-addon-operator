@@ -250,18 +250,19 @@ func jumpstartAddon(client client.Client) error {
 	}, gpuAddon)
 	isNotFound := k8serrors.IsNotFound(err)
 	if err != nil && !isNotFound {
-		return fmt.Errorf("failed to fetch GPUAddon CR %s in %s: %w", common.GlobalConfig.AddonID, common.GlobalConfig.AddonNamespace, err)
+		return fmt.Errorf("failed to fetch GPUAddon CR %s in %s: %w",
+			common.GlobalConfig.AddonID, common.GlobalConfig.AddonNamespace, err)
 	}
 	if isNotFound {
-		gpuAddon.Spec = nvidiav1alpha1.GPUAddonSpec{
-			ConsolePluginEnabled: true,
-		}
+		makeGPUAddonSpec(gpuAddon, common.GlobalConfig.GPUDirectRDMAEnabled)
 	}
 
 	gpuAddon.ObjectMeta = metav1.ObjectMeta{
 		Name:      common.GlobalConfig.AddonID,
 		Namespace: common.GlobalConfig.AddonNamespace,
 	}
+
+	setupLog.Info("Jumstart GPU Add-on with CR", "GPUAddon CR", gpuAddon)
 
 	result, err := controllerutil.CreateOrPatch(context.TODO(), client, gpuAddon, func() error {
 		versionLabel := fmt.Sprintf("%v-version", common.GlobalConfig.AddonLabel)
@@ -272,8 +273,47 @@ func jumpstartAddon(client client.Client) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to reconcile GPUAddon CR %s in %s, result: %v. error: %w", common.GlobalConfig.AddonID, common.GlobalConfig.AddonNamespace, result, err)
+		return fmt.Errorf("failed to reconcile GPUAddon CR %s in %s, result: %v. error: %w",
+			common.GlobalConfig.AddonID, common.GlobalConfig.AddonNamespace, result, err)
 	}
 
 	return nil
+}
+
+func makeGPUAddonSpec(gpuAddon *nvidiav1alpha1.GPUAddon, gpuDirectRdmaEnabled bool) {
+	gpuAddon.Spec = nvidiav1alpha1.GPUAddonSpec{
+		ConsolePluginEnabled: true,
+	}
+
+	if !gpuDirectRdmaEnabled {
+		return
+	}
+
+	gpuAddon.Spec.RDMA = &nvidiav1alpha1.RDMASpec{}
+
+	gpuAddon.Spec.RDMA.Devices = []nvidiav1alpha1.DeviceSpec{
+		{
+			ResourceName: "rdma_shared_device_a",
+			Selectors: nvidiav1alpha1.Selectors{
+				IfNames: []string{"ens2f0np0"},
+			},
+		},
+		{
+			ResourceName: "rdma_shared_device_b",
+			Selectors: nvidiav1alpha1.Selectors{
+				IfNames: []string{"ens2f1np1"},
+			},
+		},
+	}
+
+	gpuAddon.Spec.RDMA.MacvlanNetwork = nvidiav1alpha1.MacvlanNetworkSpec{
+		Master: "ens2f0np0",
+		IPAM: nvidiav1alpha1.IPAMSpec{
+			Range: "192.168.2.225/28",
+			OmitRanges: []string{
+				"192.168.2.229/30",
+				"192.168.2.236/32",
+			},
+		},
+	}
 }

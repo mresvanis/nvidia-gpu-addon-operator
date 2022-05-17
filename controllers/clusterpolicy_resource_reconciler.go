@@ -127,8 +127,14 @@ func (r *ClusterPolicyResourceReconciler) setDesiredClusterPolicy(
 
 	cp.Spec.Driver.UseOpenShiftDriverToolkit = &enabled
 
-	cp.Spec.Driver.GPUDirectRDMA = &gpuv1.GPUDirectRDMASpec{
-		Enabled: &disabled,
+	if gpuAddon.Spec.RDMA != nil {
+		cp.Spec.Driver.GPUDirectRDMA = &gpuv1.GPUDirectRDMASpec{
+			Enabled: &enabled,
+		}
+	} else {
+		cp.Spec.Driver.GPUDirectRDMA = &gpuv1.GPUDirectRDMASpec{
+			Enabled: &disabled,
+		}
 	}
 
 	cp.Spec.Driver.LicensingConfig = &gpuv1.DriverLicensingConfigSpec{

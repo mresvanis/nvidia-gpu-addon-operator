@@ -25,6 +25,7 @@ type config struct {
 	NicClusterPolicyName string `envconfig:"NIC_CLUSTER_POLICY_NAME" default:"ocp-gpu-addon"`
 	NfdCrName            string `envconfig:"NFD_CR_NAME" default:"ocp-gpu-addon"`
 	ConsolePluginImage   string `envconfig:"RELATED_IMAGE_CONSOLE_PLUGIN" default:"quay.io/edge-infrastructure/console-plugin-nvidia-gpu@sha256:248080b389af7249389d6d29c6683127b92932f2d6439f7474b3886b08773860"`
+	GPUDirectRDMAEnabled bool   `envconfig:"GPUDIRECT_RDMA_ENABLED" default:"false"`
 }
 
 var GlobalConfig config
