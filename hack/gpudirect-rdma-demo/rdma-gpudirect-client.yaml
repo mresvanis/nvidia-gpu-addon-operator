@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rdma-gpudirect-workload-client
+  namespace: default
+  annotations:
+    k8s.v1.cni.cncf.io/networks: macvlannetwork-gpu-addon
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: perf27
+  restartPolicy: OnFailure
+  containers:
+  - image: quay.io/cgament/gpu-operator:cuda-perftest
+    name: rdma-gpu-workload-ctr
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cd /root/perftest
+        set -e
+        export CUDA_H_PATH=/usr/local/cuda/include/cuda.h
+        ./autogen.sh && ./configure &&make && make install
+        sleep 3
+        ib_write_bw -a -F --report_gbits -R -q 2 --use_cuda 0 192.168.2.225
+    securityContext:
+      capabilities:
+        add: [ "IPC_LOCK" ]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        rdma/rdma_shared_device_a: 1
+      requests:
+        nvidia.com/gpu: 1
+        rdma/rdma_shared_device_a: 1
