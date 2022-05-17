@@ -65,9 +65,7 @@ func (r *ClusterPolicyResourceReconciler) Reconcile(
 
 	conditions = append(conditions, r.getDeployedConditionCreateSuccess())
 
-	logger.Info("ClusterPolicy reconciled successfully",
-		"name", cp.Name,
-		"result", res)
+	logger.Info("ClusterPolicy reconciled successfully", "name", cp.Name, "result", res)
 
 	return conditions, nil
 }
@@ -121,7 +119,10 @@ func (r *ClusterPolicyResourceReconciler) setDesiredClusterPolicy(
 	}
 
 	cp.Spec.Driver = gpuv1.DriverSpec{
-		Enabled: &enabled,
+		Enabled:    &enabled,
+		Repository: "nvcr.io/nvidia",
+		Image:      "driver",
+		Version:    "510.47.03",
 	}
 
 	cp.Spec.Driver.UseOpenShiftDriverToolkit = &enabled
@@ -133,12 +134,6 @@ func (r *ClusterPolicyResourceReconciler) setDesiredClusterPolicy(
 	cp.Spec.Driver.LicensingConfig = &gpuv1.DriverLicensingConfigSpec{
 		NLSEnabled: &disabled,
 	}
-
-	// IMPORTANT: cannot set a namespaced owner as a reference on a cluster-scoped resource.
-	// "cluster-scoped resource must not have a namespace-scoped owner, owner's namespace x"
-	// if err := ctrl.SetControllerReference(gpuAddon, cp, c.Scheme()); err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
