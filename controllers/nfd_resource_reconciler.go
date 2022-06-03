@@ -59,10 +59,21 @@ func (r *NFDResourceReconciler) Reconcile(
 		nfd = existingNFD
 	}
 
-	res, err := controllerutil.CreateOrPatch(context.TODO(), client, nfd, func() error {
+	_, err = controllerutil.CreateOrPatch(context.TODO(), client, nfd, func() error {
 		return r.setDesiredNFD(client, nfd, gpuAddon)
 	})
 
+	if err != nil {
+		conditions = append(conditions, r.getDeployedConditionCreateFailed())
+		return conditions, err
+	}
+
+	res, err := controllerutil.CreateOrPatch(context.TODO(), client, nfd, func() error {
+		nfd.Spec.WorkerConfig = &nfdv1.ConfigMap{
+			ConfigData: fmt.Sprintf("%s\n", workerConfig),
+		}
+		return nil
+	})
 	if err != nil {
 		conditions = append(conditions, r.getDeployedConditionCreateFailed())
 		return conditions, err
