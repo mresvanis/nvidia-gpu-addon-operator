@@ -21,6 +21,7 @@ import (
 
 	gpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -47,6 +48,27 @@ var _ = Describe("ClusterPolicy Resource Reconcile", Ordered, func() {
 		Expect(gpuv1.AddToScheme(scheme)).ShouldNot(HaveOccurred())
 
 		var cp gpuv1.ClusterPolicy
+		var cm corev1.ConfigMap
+
+		It("should create the DCGM Exporter ConfigMap", func() {
+			c := fake.
+				NewClientBuilder().
+				WithScheme(scheme).
+				WithRuntimeObjects().
+				Build()
+
+			cond, err := rrec.Reconcile(context.TODO(), c, &gpuAddon)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(cond).To(HaveLen(1))
+			Expect(cond[0].Type).To(Equal(ClusterPolicyDeployedCondition))
+			Expect(cond[0].Status).To(Equal(metav1.ConditionTrue))
+
+			err = c.Get(context.TODO(), types.NamespacedName{
+				Name:      dcgmMetricsConfigMapName,
+				Namespace: common.GlobalConfig.AddonNamespace,
+			}, &cm)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
 
 		It("should create the ClusterPolicy", func() {
 			c := fake.
@@ -78,6 +100,13 @@ var _ = Describe("ClusterPolicy Resource Reconcile", Ordered, func() {
 			},
 		}
 
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      dcgmMetricsConfigMapName,
+				Namespace: common.GlobalConfig.AddonNamespace,
+			},
+		}
+
 		scheme := scheme.Scheme
 		Expect(gpuv1.AddToScheme(scheme)).ShouldNot(HaveOccurred())
 
@@ -85,7 +114,7 @@ var _ = Describe("ClusterPolicy Resource Reconcile", Ordered, func() {
 			c := fake.
 				NewClientBuilder().
 				WithScheme(scheme).
-				WithRuntimeObjects(cp).
+				WithRuntimeObjects(cp, cm).
 				Build()
 
 			err := rrec.Delete(context.TODO(), c)
@@ -94,6 +123,24 @@ var _ = Describe("ClusterPolicy Resource Reconcile", Ordered, func() {
 			err = c.Get(context.TODO(), client.ObjectKey{
 				Name: cp.Name,
 			}, cp)
+			Expect(err).Should(HaveOccurred())
+			Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should delete the DCGM Exporter ConfigMap", func() {
+			c := fake.
+				NewClientBuilder().
+				WithScheme(scheme).
+				WithRuntimeObjects(cp, cm).
+				Build()
+
+			err := rrec.Delete(context.TODO(), c)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			err = c.Get(context.TODO(), client.ObjectKey{
+				Name:      cm.Name,
+				Namespace: cm.Namespace,
+			}, cm)
 			Expect(err).Should(HaveOccurred())
 			Expect(k8serrors.IsNotFound(err)).To(BeTrue())
 		})
