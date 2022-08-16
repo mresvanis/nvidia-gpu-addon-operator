@@ -31,10 +31,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	addonv1alpha1 "github.com/rh-ecosystem-edge/nvidia-gpu-addon-operator/api/v1alpha1"
 	"github.com/rh-ecosystem-edge/nvidia-gpu-addon-operator/internal/common"
@@ -133,7 +139,42 @@ func (r *GPUAddonReconciler) SetupWithManager(mgr ctrl.Manager) (controller.Cont
 		Owns(&consolev1alpha1.ConsolePlugin{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(getGpuAddonFromAddonParametersSecret),
+			builder.WithPredicates(addonParametersSecretPredicate()),
+		).
 		Build(r)
+}
+
+func getGpuAddonFromAddonParametersSecret(secret client.Object) []reconcile.Request {
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name:      common.GlobalConfig.AddonID,
+				Namespace: secret.GetNamespace(),
+			},
+		},
+	}
+}
+
+func addonParametersSecretPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return isAddonParametersSecret(e.ObjectNew)
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return isAddonParametersSecret(e.Object)
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+	}
+}
+
+func isAddonParametersSecret(o client.Object) bool {
+	return o.GetName() == "addon-nvidia-gpu-addon-parameters" &&
+		o.GetNamespace() == common.GlobalConfig.AddonNamespace
 }
 
 func (r *GPUAddonReconciler) patchStatus(ctx context.Context, gpuAddon addonv1alpha1.GPUAddon, conditions []metav1.Condition, err error) error {
