@@ -54,6 +54,7 @@ type GPUAddonReconciler struct {
 
 // List of other resources managed by this operator.
 var resourceOrderedReconcilers = []ResourceReconciler{
+	&NGCSecretResourceReconciler{},
 	&NFDResourceReconciler{},
 	&SubscriptionResourceReconciler{},
 	&ClusterPolicyResourceReconciler{},
@@ -140,6 +141,7 @@ func (r *GPUAddonReconciler) SetupWithManager(mgr ctrl.Manager) (controller.Cont
 		Owns(&consolev1alpha1.ConsolePlugin{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.Secret{}).
 		Watches(
 			&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(getGpuAddonFromAddonParametersSecret),
