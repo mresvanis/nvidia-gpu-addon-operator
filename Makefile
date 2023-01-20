@@ -175,12 +175,12 @@ PROJECT_DIR = $(shell pwd)
 CONTROLLER_GEN = $(PROJECT_DIR)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.1
 
 KUSTOMIZE = $(PROJECT_DIR)/bin/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
-	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.5
+	@GOBIN=$(PROJECT_DIR)/bin GO111MODULE=on go install sigs.k8s.io/kustomize/kustomize/v4@v4.5.7
 
 ENVTEST = $(PROJECT_DIR)/bin/setup-envtest
 .PHONY: envtest
@@ -216,7 +216,7 @@ ifeq (,$(shell which opm 2>/dev/null))
 	set -e ;\
 	mkdir -p $(dir $(OPM)) ;\
 	OS=$(shell go env GOOS) && ARCH=$(shell go env GOARCH) && \
-	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.19.1/$${OS}-$${ARCH}-opm ;\
+	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.26.2/$${OS}-$${ARCH}-opm ;\
 	chmod +x $(OPM) ;\
 	}
 else

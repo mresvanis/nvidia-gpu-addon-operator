@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the nvidia v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=nvidia.addons.rh-ecosystem-edge.io
+// +kubebuilder:object:generate=true
+// +groupName=nvidia.addons.rh-ecosystem-edge.io
 package v1alpha1
 
 import (
