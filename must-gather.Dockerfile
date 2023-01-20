@@ -1,9 +1,9 @@
 # Download the latest oc binary
-FROM registry.access.redhat.com/ubi8/ubi:8.6 as builder
+FROM registry.access.redhat.com/ubi8/ubi:8.7 as builder
 RUN curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz | tar xz oc
 
 # Package scripts and binaries required for must-gather
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7
 
 ARG VERSION
 ENV VERSION=$VERSION

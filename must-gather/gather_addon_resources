@@ -32,4 +32,7 @@ done
 custom_resources_text=$(IFS=, ; echo "${filtered_custom_resource_types[*]}")
 oc adm inspect --dest-dir $BASE_COLLECTION_PATH --rotated-pod-logs -n $ADDON_NAMESPACE "${custom_resources_text}"
 
+oc adm inspect --dest-dir $BASE_COLLECTION_PATH -A machineset,machineautoscaler
+oc adm inspect --dest-dir $BASE_COLLECTION_PATH clusterautoscaler
+
 sync
